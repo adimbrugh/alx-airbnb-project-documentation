@@ -4,6 +4,10 @@ This document outlines the **technical and functional requirements** for five ke
 
 ---
 
+## 🔑 Core Functionalities
+
+---
+
 ## 🔐 1. User Authentication
 
 ### Functional Requirements
@@ -222,3 +226,129 @@ This document outlines the **technical and functional requirements** for five ke
 - Uses optimized queries with pagination.
 
 ---
+
+
+
+
+## 🛠️ Technical Requirement
+
+---
+
+### 1. 📦 Database Management
+
+- **Database**: PostgreSQL (preferred) or MySQL  
+- **Tables**:
+  - `users` – Guest and host data
+  - `properties` – Property listings
+  - `bookings` – Reservation records
+  - `payments` – Payment and payout details
+  - `reviews` – Guest reviews tied to bookings
+  - `notifications` – Email/in-app notifications
+
+- **Constraints & Optimization**:
+  - Foreign key relationships
+  - Unique constraint on `email`, `property_id`
+  - Indexed columns: `location`, `user_id`
+  - Normalized structure (3NF)
+  - Use connection pooling (e.g., PgBouncer)
+
+---
+
+### 2. 🌐 API Development
+
+- **Architecture**: RESTful API  
+- **Versioning**: `/api/v1/`  
+- **HTTP Status Codes**: Proper usage of 200, 201, 401, 403, 404, 422, 500
+
+#### 🔑 Auth Endpoints
+
+- `POST /api/v1/auth/register/`  
+  - Input: `{ name, email, password, role }`  
+  - Output: `{ token, user_id }`  
+  - Validation: Unique email, strong password
+
+- `POST /api/v1/auth/login/`  
+  - Input: `{ email, password }`  
+  - Output: `{ token }`  
+  - Errors: 401 Unauthorized
+
+#### 🏠 Property Endpoints
+
+- `GET /api/v1/properties/`  
+  - Filters: `?location=&guests=&price_min=&price_max=`  
+  - Output: Paginated property list
+
+- `POST /api/v1/properties/`  
+  - Input: Property details + media  
+  - Role: Host only
+
+#### 📅 Booking Endpoints
+
+- `POST /api/v1/bookings/`  
+  - Input: `{ property_id, check_in, check_out }`  
+  - Output: `{ booking_id, status }`  
+  - Validation: Prevent date overlaps
+
+- `DELETE /api/v1/bookings/{id}/cancel/`  
+  - Role: Guest or host
+
+---
+
+### 3. 🔐 Authentication & Authorization
+
+- **Auth Method**: JWT (JSON Web Token)  
+  - Access Token: 15 minutes  
+  - Refresh Token: 7 days
+
+- **Roles**: Guest, Host, Admin  
+- **Access Control**:
+  - Guests: Book, Review  
+  - Hosts: Create/Edit Listings, View Bookings  
+  - Admins: Manage all resources
+
+---
+
+### 4. 🗂️ File Storage (Scenario Based)
+
+- **Storage Option**: AWS S3 or Cloudinary  
+- **Usage**:
+  - Profile Photos → `/media/users/`  
+  - Property Images → `/media/properties/`
+
+- **Validation**:
+  - Types: JPG, PNG  
+  - Size: Max 5MB
+
+---
+
+### 5. 🔌 Third-Party Services
+
+#### 📧 Email Notifications
+- **Provider**: SendGrid or Mailgun  
+- **Triggers**:
+  - Booking Confirmations  
+  - Booking Cancellations  
+  - Payment Updates
+
+#### 💳 Payment Processing
+- **Provider**: Stripe or PayPal  
+- **Flow**:
+  - Guests make payment at booking
+  - Hosts receive payout post-stay
+- **Features**:
+  - Tokenized card payments  
+  - Multi-currency support
+
+---
+
+### 6. ⚠️ Error Handling & Logging
+
+- **Error Format**:  
+  ```json
+  {
+    "status": "error",
+    "message": "Validation failed",
+    "details": {
+      "email": ["This field must be unique."]
+    }
+  }
